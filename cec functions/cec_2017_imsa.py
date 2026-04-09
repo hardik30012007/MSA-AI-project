@@ -8,7 +8,7 @@ from multiprocessing import freeze_support
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from algos.imsa import run_imsa
 
-# 🔥 Prevent thread oversubscription
+# Prevent thread oversubscription
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -29,12 +29,51 @@ if hasattr(op, 'different_powers__'): op.different_powers__ = different_powers_s
 
 from opfunu.cec_based import cec2017
 
+
+# ---------- SAFE PROBLEM ----------
 def get_problem(fid, dim):
     cname = f'F{fid}2017'
+    if not hasattr(cec2017, cname):
+        return None
     return getattr(cec2017, cname)(ndim=dim)
 
 
-# 🔥 ONE TASK = ONE RUN (MAX PARALLELISM)
+# ---------- LOAD CHECKPOINT ----------
+def load_existing(path, functions, runs):
+    results = {fid: [None]*runs for fid in functions}
+
+    if not os.path.exists(path):
+        return results
+
+    with open(path, 'r') as f:
+        reader = csv.reader(f)
+        next(reader, None)
+
+        for row in reader:
+            fid = int(row[0][1:])
+            vals = row[1:]
+
+            for i, v in enumerate(vals):
+                if v != '':
+                    results[fid][i] = float(v)
+
+    return results
+
+
+# ---------- SAVE CHECKPOINT ----------
+def save_progress(path, results, functions, runs):
+    with open(path, 'w', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(['Function'] + [f'Run{i}' for i in range(1, runs+1)])
+
+        for fid in functions:
+            row = [f'F{fid}']
+            for v in results[fid]:
+                row.append(v if v is not None else '')
+            w.writerow(row)
+
+
+# ---------- WORKER ----------
 def run_single(args):
     fid, r = args
 
@@ -43,6 +82,9 @@ def run_single(args):
     pop_size = 50
 
     prob = get_problem(fid, dim)
+    if prob is None:
+        return fid, r, None
+
     bounds = list(zip(prob.lb, prob.ub))
 
     _, best, _ = run_imsa(
@@ -50,12 +92,13 @@ def run_single(args):
         bounds,
         pop_size=pop_size,
         max_fes=max_fes,
-        seed=1000*fid + r
+        seed=1000 * fid + r
     )
 
     return fid, r, best
 
 
+# ---------- MAIN ----------
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--outdir', default='results_cec2017_imsa')
@@ -64,38 +107,49 @@ def main():
 
     os.makedirs(args.outdir, exist_ok=True)
 
-    functions = list(range(1, 31))
+    # ✅ ONLY F1–F29
+    functions = list(range(1, 30))
     runs = 50
 
     raw_path = os.path.join(args.outdir, 'cec2017_IMSA_raw.csv')
 
-    # Prepare all tasks
-    tasks = [(fid, r) for fid in functions for r in range(runs)]
+    # LOAD EXISTING
+    results = load_existing(raw_path, functions, runs)
 
-    # Storage
-    results = {fid: [None]*runs for fid in functions}
+    # SKIP COMPLETED RUNS
+    tasks = [
+        (fid, r)
+        for fid in functions
+        for r in range(runs)
+        if results[fid][r] is None
+    ]
 
-    print(f"Total tasks: {len(tasks)} (30 functions × 50 runs)")
+    print(f"Remaining tasks: {len(tasks)}")
     print(f"Using {args.workers} workers")
 
-    # 🔥 FULL PARALLEL EXECUTION
+    # PARALLEL EXECUTION
     with ProcessPoolExecutor(max_workers=args.workers) as executor:
         futures = [executor.submit(run_single, t) for t in tasks]
 
         for future in as_completed(futures):
-            fid, r, best = future.result()
-            results[fid][r] = best
-            print(f"Done F{fid} Run{r}")
+            try:
+                fid, r, best = future.result()
 
-    # Save CSV
-    with open(raw_path, 'w', newline='') as f:
-        w = csv.writer(f)
-        w.writerow(['Function'] + [f'Run{i}' for i in range(1, runs+1)])
+                if best is None:
+                    print(f"[SKIP] F{fid}")
+                    continue
 
-        for fid in functions:
-            w.writerow([f'F{fid}'] + results[fid])
+                results[fid][r] = best
 
-    print(f"Saved {raw_path}")
+                # 🔥 SAVE AFTER EACH RUN
+                save_progress(raw_path, results, functions, runs)
+
+                print(f"[SAVED] F{fid} Run{r}")
+
+            except Exception as e:
+                print(f"[ERROR] {e}")
+
+    print(f"\nFINAL SAVED: {raw_path}")
 
 
 if __name__ == '__main__':
