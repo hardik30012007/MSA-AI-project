@@ -1,6 +1,17 @@
+import math
 import numpy as np
 from bench_utils import ObjectiveCounter, safe_clip
-from msa import levy_flight_step
+
+def levy_flight_step(D, beta=1.5):
+    sigma_u = (
+        math.gamma(1 + beta) * np.sin(np.pi * beta / 2)
+        / (math.gamma((1 + beta) / 2) * beta * 2 ** ((beta - 1) / 2))
+    ) ** (1 / beta)
+    u = np.random.randn(D) * sigma_u
+    v = np.random.randn(D)
+    v = np.where(np.abs(v) < 1e-12, 1e-12, v)
+    step = u / (np.abs(v) ** (1 / beta))
+    return np.clip(step, -10, 10)
 
 def chaotic_initialization(bounds, pop_size, D):
     X = np.zeros((pop_size, D))
