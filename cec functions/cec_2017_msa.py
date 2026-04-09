@@ -4,6 +4,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from algos.msa import run_msa
+
 # pkg_resources shim support for opfunu on py3.13
 import opfunu.utils.operator as op
 
@@ -18,15 +19,15 @@ def different_powers_safe(x):
 if hasattr(op, 'different_powers'): op.different_powers = different_powers_safe
 if hasattr(op, 'different_powers__'): op.different_powers__ = different_powers_safe
 
-from opfunu.cec_based import cec2014
+from opfunu.cec_based import cec2017
 
 def get_problem(fid, dim):
-    cname = f'F{fid}2014'
-    return getattr(cec2014, cname)(ndim=dim)
+    cname = f'F{fid}2017'
+    return getattr(cec2017, cname)(ndim=dim)
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--outdir', default='results_cec2014_msa')
+    ap.add_argument('--outdir', default='results_cec2017_msa')
     args = ap.parse_args()
 
     os.makedirs(args.outdir, exist_ok=True)
@@ -35,9 +36,9 @@ def main():
     runs = 50
     max_fes = 60000
     pop_size = 50
-    functions = list(range(1, 31))  # CEC2014 has 28 functions (F1-F28)
+    functions = list(range(1, 30))  # CEC2017 has 29 functions (F1-F29)
 
-    raw_path = os.path.join(args.outdir, 'cec2014_MSA_raw.csv')
+    raw_path = os.path.join(args.outdir, 'cec2017_MSA_raw.csv')
     with open(raw_path, 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(['Function'] + [f'Run{i}' for i in range(1, runs+1)])
@@ -45,7 +46,7 @@ def main():
             prob = get_problem(fid, dim)
             bounds = list(zip(prob.lb, prob.ub))
             vals = []
-            print(f'Running CEC2014 F{fid} MSA (Dim={dim}) ...')
+            print(f'Running CEC2017 F{fid} MSA (Dim={dim}) ...')
             for r in range(runs):
                 _, best, _ = run_msa(prob.evaluate, bounds, pop_size=pop_size, max_fes=max_fes, seed=1000*fid + r)
                 vals.append(best)
