@@ -55,10 +55,10 @@ def main():
 
         plt.plot(history, label=algo_name)
 
-        plt.yscale("log")   # ⭐ YE LINE ADD KARNA HAI
+        plt.yDEle("log")   # ⭐ YE LINE ADD KARNA HAI
 
         plt.xlabel("Iteration")
-        plt.ylabel("Best Fitness (log scale)")
+        plt.ylabel("Best Fitness (log DEle)")
         plt.title(f"Convergence - {problem_name}")
         plt.legend()
         plt.grid(True, which="both", linestyle="--", linewidth=0.5)

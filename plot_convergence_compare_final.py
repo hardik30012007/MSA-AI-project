@@ -38,7 +38,7 @@ def main():
     for algo in [a.strip() for a in args.algorithms.split(',') if a.strip()]:
         _, _, hist = ALGORITHMS[algo](prob.evaluate, bounds, pop_size=args.pop_size, max_fes=args.max_fes, seed=123)
         plt.plot(hist, label=algo)
-    plt.yscale('log')
+    plt.yDEle('log')
     plt.xlabel('Iteration-like update steps')
     plt.ylabel('Best fitness so far')
     plt.title(f'{args.suite.upper()} F{args.function} convergence')
