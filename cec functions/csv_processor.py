@@ -2,8 +2,8 @@ import pandas as pd
 import os
 
 # -------- File paths --------
-input_file = "results_cec2017_imsa/cec2017_IMSA_raw.csv"   # your raw CSV file
-output_file = "results_cec2017_imsa/processed_cec2017_imsa.csv"  # output file
+input_file = "results_cec2014_imsa/cec2014_IMSA_raw.csv"   # your raw CSV file
+output_file = "results_cec2014_imsa/processed_cec2014_imsa.csv"  # output file
 
 # -------- Load CSV --------
 df = pd.read_csv(input_file)
