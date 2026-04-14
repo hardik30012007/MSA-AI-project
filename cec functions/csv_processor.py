@@ -1,29 +1,37 @@
 import pandas as pd
 import os
 
-# -------- File paths --------
-input_file = "results_cec_2017_MSA/cec2017_MSA_raw.csv"   # your raw CSV file
-output_file = "results_cec_2017_MSA/processed_cec2017_msa.csv"  # output file
+# -------- Input & Output folders --------
+input_folder = "cec functions/cec2014_split_csvs"
+output_folder = "cec functions/cec2014_processed_csvs"
 
-# -------- Load CSV --------
-df = pd.read_csv(input_file)
+# Create output folder if not exists
+os.makedirs(output_folder, exist_ok=True)
 
-# -------- Extract run columns --------
-# Select all columns except 'Function'
-run_columns = [col for col in df.columns if col.startswith("Run")]
+# -------- Process each CSV --------
+for file in os.listdir(input_folder):
+    if file.endswith(".csv"):
+        input_path = os.path.join(input_folder, file)
+        
+        # Output file (same name)
+        output_path = os.path.join(output_folder, file)
 
-run_data = df[run_columns].astype(float)
+        # -------- Load CSV --------
+        df = pd.read_csv(input_path)
 
-# -------- Compute statistics --------
-df["Mean"] = run_data.mean(axis=1)
-df["Std"] = run_data.std(axis=1)
+        # -------- Extract run columns --------
+        run_columns = [col for col in df.columns if col.startswith("Run")]
+        run_data = df[run_columns].astype(float)
 
-# -------- Create final dataframe --------
-processed_df = df[["Function", "Mean", "Std"]]
+        # -------- Compute statistics --------
+        df["Mean"] = run_data.mean(axis=1)
+        df["Std"] = run_data.std(axis=1)
 
-# -------- Save to project folder --------
-# (saves in same directory as script)
-processed_df.to_csv(output_file, index=False)
+        # -------- Final dataframe --------
+        processed_df = df[["Function", "Mean", "Std"]]
 
-print("Processed CSV saved at:", os.path.abspath(output_file))
-print(processed_df.head())
+        # -------- Save --------
+        processed_df.to_csv(output_path, index=False)
+
+        print(f"Processed: {file} → {output_path}")
+print("All files processed.")
