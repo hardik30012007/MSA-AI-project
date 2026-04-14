@@ -1,3 +1,4 @@
+14 functions improved
 F5, F7, F8, F9, F10, 
 F15, F16, F17, F18, F19, 
 F21, F25, F26, F27
