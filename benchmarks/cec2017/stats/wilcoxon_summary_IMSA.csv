@@ -1,0 +1,9 @@
+Algorithm,Win,Loss,Tie
+MSA,7,9,13
+PSO,21,8,0
+GWO,18,10,1
+WOA,13,14,2
+SSA,17,10,2
+DE,22,7,0
+GA,12,16,1
+HHO,14,14,1
